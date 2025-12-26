@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Node Nav - 管理</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" defer></script>
+
+    <link rel="stylesheet" href="css/admin.css?v=36.0">
+
+    <script>
+        const token = sessionStorage.getItem('auth_token');
+        if (!token) window.location.href = '/login';
+
+        (function() {
+            try {
+                const cachedTheme = localStorage.getItem('node_nav_theme');
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                let isDark = false;
+                if (cachedTheme === 'dark') isDark = true;
+                else if (cachedTheme === 'light') isDark = false;
+                else isDark = systemDark;
+                if (isDark) document.body.classList.add('dark-mode');
+            } catch(e) {}
+        })();
+    </script>
+    
+    <script src="js/admin.js?v=36.0" defer></script>
+</head>
+<body>
+    <div id="bookmarkModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">添加书签</span>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="inpName" class="form-control" placeholder="名称 (例如: Google)">
+                <input type="text" id="inpUrl" class="form-control" placeholder="网址 (例如: google.com)" onblur="autoParseUrl()" inputmode="url" enterkeyhint="next">
+                <input type="text" id="inpIcon" class="form-control" placeholder="图标地址 (可选)">
+                <select id="inpCat" class="form-control"></select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-save-modal" id="btnSaveAction" onclick="addOrUpdateBookmark()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div id="toast" class="toast-container">
+        <svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span id="toastMsg">操作成功</span>
+    </div>
+
+    <input type="file" id="importFileBtn" style="display: none;" accept=".json" onchange="handleImportFile(this)">
+
+    <button id="fab-add" class="fab-btn" onclick="openAddModal()" title="添加新书签">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <div class="admin-wrapper fade-slide-up" id="admin-wrapper">
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="logo-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
+                        <span style="font-size: 24px;">⚡</span>
+                    </div>
+                    <span class="logo-text">Node Nav</span>
+                </div>
+                <button class="mobile-close-btn" onclick="toggleSidebar()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="sidebar-body">
+                <div class="sidebar-main-nav">
+                    <div class="menu-item" id="nav-item-settings" onclick="handleMenuClick('settings', this)">
+                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <span class="menu-text">系统设置</span>
+                    </div>
+                    
+                    <div class="menu-item active" id="nav-item-bookmarks" onclick="handleMenuClick('bookmarks', this)">
+                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        <span class="menu-text">书签管理</span>
+                    </div>
+                    
+                    <div class="divider"></div>
+                </div>
+
+                <div id="sidebar-cat-manager">
+                    <div class="section-label" style="margin-top: 0;">分类管理</div>
+                    <div class="cat-input-group">
+                        <input type="text" id="newCatName" class="cat-input" placeholder="新建分类...">
+                        <button class="btn-add-cat" onclick="addCategory()" title="添加分类">+</button>
+                    </div>
+                    <div id="catListContainer" class="cat-list-wrapper"></div>
+                </div>
+
+                <div id="sidebar-settings-nav" style="display: none;">
+                    <div class="section-label" style="margin-top: 0;">设置菜单</div>
+                    <div class="menu-item active" id="btn-set-basic" onclick="switchSettingSubView('set-basic', this)">
+                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <span class="menu-text">基本设置</span>
+                    </div>
+                    <div class="menu-item" id="btn-set-theme" onclick="switchSettingSubView('set-theme', this)">
+                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <span class="menu-text">设置外观</span>
+                    </div>
+                    <div class="menu-item" id="btn-set-wallpaper" onclick="switchSettingSubView('set-wallpaper', this)">
+                        <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <span class="menu-text">设置壁纸</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <div class="nav-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    </div>
+
+                <div class="nav-right" style="gap: 8px;">
+                    <button class="btn-icon-nav" onclick="exportBookmarks()" title="导出备份">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <button class="btn-icon-nav" onclick="triggerImport()" title="导入备份">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </button>
+                    <div style="width:1px; height:20px; background:var(--border-color); margin:0 4px;"></div>
+                    <a href="/" class="btn-nav-link" target="_blank" title="查看前台">
+                        <span class="nav-text" style="margin-right:5px;">前台</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </a>
+                    <button class="btn-icon-nav" onclick="logout()" title="退出登录" style="color: #e53e3e;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="scroll-content">
+                <div id="view-bookmarks" class="view-section active">
+                    <div class="grid-container">
+                        <div id="bookmarkGrid" class="bookmark-grid"></div>
+                    </div>
+                </div> 
+
+                <div id="view-settings" class="view-section">
+                    <div id="set-basic" class="settings-card">
+                        <div class="settings-header">
+                            <div class="settings-title">基本设置</div>
+                            <p class="settings-subtitle">管理网站的全局配置信息。</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">网站标题</label>
+                            <div class="input-with-button">
+                                <input type="text" id="sys-site-title" class="form-control" placeholder="默认为：Node Nav">
+                                <button class="btn-save" onclick="saveSystemSettings()">保存</button>
+                            </div>
+                            <p class="form-help">该标题将显示在浏览器标签页和侧边栏顶部。</p>
+                        </div>
+                    </div>
+
+                    <div id="set-theme" class="settings-card" style="display: none;">
+                        <div class="settings-header">
+                            <div class="settings-title">主题外观</div>
+                            <p class="settings-subtitle">选择您喜欢的界面风格。</p>
+                        </div>
+                        <div class="theme-grid">
+                            <div class="theme-card" id="theme-opt-auto" onclick="setTheme('auto')">
+                                <div class="theme-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+                                <div class="theme-info"><span class="theme-name">跟随系统</span></div>
+                                <div class="theme-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                            </div>
+                            <div class="theme-card" id="theme-opt-light" onclick="setTheme('light')">
+                                <div class="theme-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
+                                <div class="theme-info"><span class="theme-name">浅色模式</span></div>
+                                <div class="theme-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                            </div>
+                            <div class="theme-card" id="theme-opt-dark" onclick="setTheme('dark')">
+                                <div class="theme-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></div>
+                                <div class="theme-info"><span class="theme-name">深色模式</span></div>
+                                <div class="theme-check"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                            </div>
+                        </div>
+                    </div>
+                        
+                    <div id="set-wallpaper" class="settings-card" style="display: none;">
+                        <div class="settings-header">
+                            <div class="settings-title">设置壁纸</div>
+                            <p class="settings-subtitle">设置背景图片或使用 Bing 每日美图。</p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">图片地址</label>
+                            <div class="input-with-button">
+                                <input type="text" id="custom-bg-url" class="form-control" placeholder="https://example.com/wallpaper.jpg">
+                                <button class="btn-save" onclick="saveWallpaper()">应用</button>
+                                <button class="btn-outline-danger" onclick="clearWallpaper()">清除</button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 30px;">
+                            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+                                Bing 每日美图
+                                <span style="font-size:0.75rem; font-weight:400; color:var(--text-sub);">点击即可应用</span>
+                            </label>
+                            <div id="bing-loading" style="display:none; text-align:center; padding:30px; color:var(--text-sub); font-size:0.9rem; background:rgba(0,0,0,0.02); border-radius:12px;">
+                                ⏳ 正在获取 Bing 美图...
+                            </div>
+                            <div id="bing-grid" class="bing-grid"></div>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </main>
+    </div>
+</body>
+</html>

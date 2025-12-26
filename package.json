@@ -1,0 +1,17 @@
+{
+  "name": "node-nav",
+  "version": "1.0.0",
+  "description": "Navigation site with subscription management",
+  "main": "app.js",
+  "private": false,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2",
+    "axios": "^1.12.2"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

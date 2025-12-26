@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Nav - 登录</title>
+    <link rel="stylesheet" href="css/login.css">
+    <script src="js/login.js" defer></script>
+</head>
+<body>
+    <script>
+        // 防闪烁脚本
+        (function() {
+            try {
+                const cachedTheme = localStorage.getItem('node_nav_theme');
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                let isDark = false;
+                if (cachedTheme === 'dark') isDark = true;
+                else if (cachedTheme === 'light') isDark = false;
+                else isDark = systemDark;
+                if (isDark) document.body.classList.add('dark-mode');
+            } catch(e) {}
+        })();
+    </script>
+
+    <div class="login-card" id="login-card" style="opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease-out, transform 0.5s ease-out, background-color 0.3s;">
+        <div class="login-title">
+            <span>⚡</span> Node Nav
+        </div>
+        
+        <input type="password" id="password" class="form-input" placeholder="请输入密码" autofocus>
+        
+        <div id="error-msg" class="error-message"></div>
+        
+        <div class="form-footer">
+            <a href="/" class="back-link">返回首页</a>
+            <button id="btn-submit" class="btn-submit" onclick="performLogin()">登 录</button>
+        </div>
+    </div>
+</body>
+</html>
