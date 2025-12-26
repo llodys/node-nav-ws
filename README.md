@@ -1,6 +1,8 @@
-<div align="center">
+# Node-Nav 导航站
 
-### 用于node环境的玩具和容器，基于node三方ws库，vless+trojan双协议，集成哪吒探针服务(v0或v1)，可自行添加环境变量
+- 用于node环境的玩具和容器，基于node三方ws库，vless+trojan双协议，集成哪吒探针服务。
+
+---
 
   | 变量名        | 是否必须 | 默认值 | 备注 |
   | ------------ | ------ | ------ | ------ |
@@ -14,11 +16,9 @@
   | SUB_PATH     | 否 |  sub   | 订阅路径   |
   | AUTO_ACCESS  | 否 |  false | 是否开启自动访问保活,false为关闭,true为开启,需同时填写DOMAIN变量 |
 
-* 域名/${SUB_APTH}查看节点信息，非标端口，域名:端口/${SUB_APTH}  SUB_APTH为自行设置的订阅token，未设置默认为sub
+### 📌 各变量说明
 
-    
-* 温馨提示：READAME.md为说明文件，请不要上传。
-* js混肴地址：https://obfuscator.io
+---
 
 ### 使用cloudflare workers 或 snippets 反代域名给节点套cdn加速
 ```
